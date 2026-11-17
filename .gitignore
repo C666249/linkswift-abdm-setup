@@ -1,0 +1,10 @@
+# 安装包本体不进 git（体积大，install.ps1 会按需下载）
+installer/*.exe
+installer/*.zip
+installer/*.md5
+
+# 运行时产物
+下载/
+tools/guide.log
+tools/_page.html
+*.bak-*

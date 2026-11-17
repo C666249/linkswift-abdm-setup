@@ -1,0 +1,128 @@
+LinkSwift + AB Download Manager 一键整合包 v1.0
+================================================
+
+用途：把这套"网盘直链 → ABDM 多线程下载"的环境，搬到任何一台 Windows 10/11。
+不需要懂命令行，不需要装 Python，也不需要 AI。
+
+整个包只有 1 个入口：双击 setup.bat。
+
+
+一、双击 setup.bat 之后会发生什么
+--------------------------------
+1. 弹一个黑色窗口，自动：
+   · 检查 AB Download Manager，没装就静默安装 installer 目录里那个 exe
+   · 在本文件夹下建一个 下载 目录
+   · 写配置：集成端口 15151、API 密钥 linkswift2026、下载目录指向本文件夹的 下载
+   · 启动服务并自检（带密钥 ping 一次，返回 pong 就是通了）
+   看到最后几行是绿色的 [OK]，这一步就算完。
+
+2. 自动打开一个本地网页 —— 安装向导（地址 http://127.0.0.1:18080/）
+   这个网页由 tools\guide-server.ps1 提供，只监听本机 127.0.0.1，不对外网开放。
+   页面上会显示四项状态灯（下载器 / 服务 / 配置 / 脚本），全绿说明后端没问题。
+
+3. 你在这个网页里点两下就装完（浏览器扩展没法从命令行静默安装，必须人点）：
+   · 第 1 步：点「安装 LinkSwift (ABDM Key Patch)」→ 脚本管理器弹出安装页 → 点「安装」
+   · 第 2 步：核对名字是 LinkSwift (ABDM Key Patch)、版本是 1.1.3.abdm3
+   · 第 3 步：去任意网盘页按 Ctrl+F5，点「下载助手」→ 齿轮 → 填服务地址
+
+   如果页面上"脚本管理器"是红灯（说明新电脑还没装）：
+   先点第 0 步的按钮去 Edge/Chrome 商店装「脚本猫 ScriptCat」，装完刷新本页再点第 1 步。
+
+4. 都弄完，点页面底部「装好了，关闭向导服务」，向导就退了，以后不用再开。
+
+
+二、第 3 步那三项参数（照抄）
+----------------------------
+  服务主机    http://127.0.0.1      ← 别写 localhost，本机会先解析到 IPv6 导致推送失败
+  服务端口    15151
+  存储路径    留空（默认落到本包的 下载 目录）
+  API 密钥    留空（脚本里已内置 linkswift2026）
+
+  点「测试」应显示绿色"成功"。
+
+
+三、日常使用
+------------
+· 平时什么都不用启动：ABDM 会开机自启（setup.bat 已写进 HKCU\...\Run），
+  它在托盘里常驻，那个 15151 端口就是它提供的。
+· 网盘页面第一次进去按 Ctrl+F5，右下角出现「下载助手」，选 ABDM 下载即可。
+· 别挪动本文件夹：配置里下载目录、分类目录都是绝对路径，挪了要重跑 setup.bat 重设。
+· 别在托盘里「退出」ABDM，否则推送会失败；最小化/关窗口没事。
+
+
+四、全新电脑上的注意事项
+------------------------
+· 需要联网：网盘直链、脚本里的 jQuery/ SweetAlert 等依赖都走 CDN。
+· 不需要管理员权限：ABDM 装在 %LOCALAPPDATA%\ABDownloadManager（用户级）。
+· 不需要 Python / Node：向导服务是纯 PowerShell（Windows 自带）。
+· Windows PowerShell 版本需 5.1 及以上（Win10 1809+ / Win11 默认满足）。
+· 杀毒软件可能拦 installer 里的 exe（首次静默安装），加白名单或手动双击装一次即可。
+· 这台机器上没有 ABDM 安装包时，install.ps1 会尝试从官方 GitHub Releases 下载。
+
+
+五、目录说明
+------------
+  setup.bat                       唯一入口：装下载器 → 起向导 → 开网页
+  install.ps1                     下载器安装与配置（可单独跑，支持 -SelfTest 自检）
+  tools\guide-server.ps1          本地安装向导服务（127.0.0.1:18080）
+  tools\appSettings.template.json ABDM 1.11.4 配置模板（首次运行兜底用）
+  tools\categories.template.json  分类目录模板
+  tools\guide.log                 向导访问日志
+  script\linkswift-abdm-v3.user.js 用户脚本本体（LinkSwift 打 ABDM 密钥补丁版）
+  installer\ABDownloadManager_1.11.4_windows_x64.exe
+  下载\                           默认下载目录（分类子目录 Programs/Videos/... 自动创建）
+
+
+六、常见问题
+------------
+Q: 双击 setup.bat 被 SmartScreen 拦住（蓝色窗口"Windows 已保护你的电脑"）
+A: 点「更多信息」→「仍要运行」。本地 bat 的常规提示，不是病毒。
+
+Q: 向导网页打不开 / 提示连接被拒绝
+A: 多半是端口被占或服务没起。手动运行：
+     powershell -NoProfile -ExecutionPolicy Bypass -File tools\guide-server.ps1 -OpenBrowser
+   端口 18080 被占时它会自动顺延到 18081、18082… 看控制台/日志里打印的地址。
+
+Q: 点「安装 LinkSwift」没弹安装框，而是显示一堆代码或下载了文件
+A: 说明脚本管理器没装/没启用，回到向导第 0 步装脚本猫；或手动导入：
+   脚本猫图标 → 管理面板 → 工具 → 导入脚本 → 选 script\linkswift-abdm-v3.user.js
+
+Q: 自检显示 pong 正常，但推送还是失败
+A: 把「服务主机」改成 http://127.0.0.1（原因见第二节 note）。
+
+Q: 端口 15151 被占了
+A: 打开 ABDM → 设置 → 浏览器插件集成，改端口（如 15152），
+   同时改 .abdm\config\appSettings.json 的 apiPort 和脚本设置里的端口。
+
+Q: 想换成别的下载目录
+A: 装完后 ABDM → 设置 → 下载 → 默认下载目录改掉；
+   或在网盘页的「存储路径」里填目标目录（优先级最高）。
+   注意本包挪位置后，配置里的旧路径会失效，需要重设一次。
+
+Q: 怎么彻底卸载
+A: 卸载 AB Download Manager；删 %USERPROFILE%\.abdm；
+   浏览器里删掉脚本和扩展；删本文件夹。
+
+
+七、这个包改了哪些东西
+----------------------
+· 安装 AB Download Manager 到 %LOCALAPPDATA%\ABDownloadManager（用户级，免管理员）
+· 配置文件 %USERPROFILE%\.abdm\config\appSettings.json：
+    apiEnabled = true
+    apiPort = 15151
+    apiAuthKey = linkswift2026
+    apiAuthEnabled = true
+    defaultDownloadFolder = 本包\下载
+· 分类目录（下载\Programs、下载\Videos 等）全部指向本包的 下载
+· 向 HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run 写入 ABDownloadManager 自启项
+  （ABDM 自己的"开机自启"开关在此版本上并不会真正注册，故由脚本补上）
+· 旧配置在写入前会备份为 appSettings.json.bak-时间戳
+
+
+八、来源与致谢
+--------------
+· LinkSwift 用户脚本：hmjz100 / 油小猴（AGPL-3.0）
+  https://github.com/hmjz100/LinkSwift
+· AB Download Manager：amir1376
+  https://github.com/amir1376/ab-download-manager
+· 本整合包只是把两者接起来，脚本为打了 ABDM 密钥补丁的自用版本。
